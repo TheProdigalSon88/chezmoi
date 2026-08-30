@@ -1,0 +1,12 @@
+{
+  "local": { "prefix": "l", "body": "local $1 = $0" },
+  "Remove prefixes": { "prefix": ["lfu", "ll", "lpca"] },
+
+  "local function": {
+    "prefix": "lf",
+    "body": [
+      "local function $1($2)",
+      "end"
+    ]
+  }
+}
