@@ -25,10 +25,15 @@ return {
       -- Define runtime properties. Use 'LuaJIT', as it is built into Neovim.
       runtime = { version = 'LuaJIT', path = vim.split(package.path, ';') },
       workspace = {
-        -- Don't analyze code from submodules
-        ignoreSubmodules = true,
         -- Add Neovim's methods for easier code writing
-        library = { vim.env.VIMRUNTIME .. '/lua' },
+        library = {
+          vim.env.VIMRUNTIME .. '/lua',
+          vim.fn.stdpath('config'),
+          -- Include installed plugins so lua_ls understands mini.nvim, conform, etc.
+          vim.fn.stdpath('data') .. '/site/pack/core/opt',
+          -- Include mason-installed packages for any lua libraries installed via mason
+          vim.fn.stdpath('data') .. '/mason/packages',
+        },
       },
     },
   },
