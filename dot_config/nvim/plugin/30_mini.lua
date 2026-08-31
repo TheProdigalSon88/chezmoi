@@ -160,7 +160,42 @@ end)
 -- - `:h MiniStatusline-example-content` - example of default content. Use it to
 --   configure a custom statusline by setting `config.content.active` function.
 now(function()
-	require("mini.statusline").setup()
+	require("mini.statusline").setup({
+		content = {
+			active = function()
+				local mode, mode_hl = MiniStatusline.section_mode({ trunc_width = 120 })
+				local git          = MiniStatusline.section_git({ trunc_width = 40 })
+				local diff         = MiniStatusline.section_diff({ trunc_width = 75 })
+				local diagnostics  = MiniStatusline.section_diagnostics({ trunc_width = 75 })
+				local lsp          = MiniStatusline.section_lsp({ trunc_width = 75 })
+				local filename     = MiniStatusline.section_filename({ trunc_width = 140 })
+				local fileinfo     = MiniStatusline.section_fileinfo({ trunc_width = 120 })
+				local location     = MiniStatusline.section_location({ trunc_width = 75 })
+				local search       = MiniStatusline.section_searchcount({ trunc_width = 75 })
+
+				-- nvim-context: show qflist title when available
+				local ctx_title = ""
+				local ok, ctx = pcall(require, "nvim-context")
+				if ok then
+					local comp = ctx.StatuslineComponent()
+					if comp.cond and comp.cond() then
+						ctx_title = comp[1]() or ""
+					end
+				end
+
+				return MiniStatusline.combine_groups({
+					{ hl = mode_hl,                  strings = { mode } },
+					{ hl = "MiniStatuslineDevinfo",  strings = { git, diff, diagnostics, lsp } },
+					"%<", -- truncation point
+					{ hl = "MiniStatuslineFilename", strings = { filename } },
+					"%=", -- right-align remainder
+					{ hl = "MiniStatuslineFilename", strings = { ctx_title } },
+					{ hl = "MiniStatuslineFileinfo", strings = { fileinfo } },
+					{ hl = mode_hl,                  strings = { search, location } },
+				})
+			end,
+		},
+	})
 end)
 
 -- Tabline. Sets `:h 'tabline'` to show all listed buffers in a line at the top.

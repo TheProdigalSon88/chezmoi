@@ -43,9 +43,7 @@ Config.later(function()
     else
       local buf_dir = vim.fn.expand('%:p:h')
       if buf_dir ~= "" and vim.fn.isdirectory(buf_dir) == 1 then
-        local git_root = vim.fn.systemlist("git -C " .. vim.fn.shellescape(buf_dir) .. " rev-parse --show-toplevel")
-        local work_dir = (vim.v.shell_error == 0 and git_root[1] and git_root[1] ~= "") and git_root[1] or buf_dir
-        vim.cmd("botright " .. term_width .. " vsplit | lcd " .. work_dir .. " | term opencode --port")
+        vim.cmd("botright " .. term_width .. " vsplit | lcd " .. buf_dir .. " | term opencode --port")
       else
         vim.cmd("botright " .. term_width .. " vsplit | term opencode --port")
       end
