@@ -39,7 +39,6 @@ later(function()
   -- Keymaps
   local map = vim.keymap.set
   map({ "n", "v" }, "<leader>Qa", "<cmd>Context AddReference<cr>",              { desc = "Add selection to context" })
-  map("n",          "<leader>Qe", "<cmd>Context EditReference<cr>",              { desc = "Edit selected context entity" })
   map("n",          "<leader>Qs", "<cmd>Context SaveContext<cr>",                { desc = "Save context to DB" })
   map("n",          "<leader>Ql", "<cmd>Context LoadContext<cr>",                { desc = "Load context from DB" })
   map("n",          "<leader>Qt", "<cmd>Context AddEditContextTitle<cr>",        { desc = "Set quickfix title" })
