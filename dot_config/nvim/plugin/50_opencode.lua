@@ -5,68 +5,71 @@ Config.later(function()
   } })
 
   local function opencode_buf_name()
-    local branch = vim.trim(vim.fn.system("git -C " .. vim.fn.getcwd() .. " branch --show-current"))
+    local cwd = vim.fn.getcwd()
+    local branch = vim.trim(vim.fn.system({ "git", "-C", cwd, "branch", "--show-current" }))
     return "opencode://" .. (branch ~= "" and branch or "no-branch")
   end
 
-  local function toggle_opencode_terminal()
-    local target_name = opencode_buf_name()
-    local total_cols = vim.o.columns
-    local term_width = math.floor(total_cols / 3)
-    local origin_win = vim.api.nvim_get_current_win()
-
-    -- Find an existing buffer with the correct branch label
-    local found_buf = nil
+  local function find_opencode_buf(name)
     for _, buf in ipairs(vim.api.nvim_list_bufs()) do
-      if vim.api.nvim_buf_is_valid(buf) and vim.api.nvim_buf_get_name(buf) == target_name then
-        found_buf = buf
-        break
+      if vim.api.nvim_buf_is_valid(buf) and vim.api.nvim_buf_get_name(buf) == name then
+        return buf
       end
     end
-
-    if found_buf then
-      local term_win = vim.fn.bufwinid(found_buf)
-      if term_win ~= -1 then
-        -- Already visible — hide it
-        vim.api.nvim_win_close(term_win, true)
-      else
-        -- Exists but hidden — reopen it
-        local buf_dir = vim.fn.expand('%:p:h')
-        if buf_dir ~= "" and vim.fn.isdirectory(buf_dir) == 1 then
-          vim.cmd("botright " .. term_width .. " vsplit | lcd " .. buf_dir .. " | buffer " .. found_buf)
-        else
-          vim.cmd("botright " .. term_width .. " vsplit | buffer " .. found_buf)
-        end
-        vim.bo[found_buf].buflisted = false
-        vim.api.nvim_set_current_win(origin_win)
-      end
-    else
-      local buf_dir = vim.fn.expand('%:p:h')
-      if buf_dir ~= "" and vim.fn.isdirectory(buf_dir) == 1 then
-        vim.cmd("botright " .. term_width .. " vsplit | lcd " .. buf_dir .. " | term opencode --port")
-      else
-        vim.cmd("botright " .. term_width .. " vsplit | term opencode --port")
-      end
-      vim.api.nvim_buf_set_name(vim.api.nvim_get_current_buf(), target_name)
-      vim.bo[vim.api.nvim_get_current_buf()].buflisted = false
-      vim.api.nvim_set_current_win(origin_win)
-    end
+    return nil
   end
 
-  local opencode_terminal = function()
+  local function term_width()
+    return math.floor(vim.o.columns / 3)
+  end
+
+  local function show_opencode_buf(buf)
     local origin_win = vim.api.nvim_get_current_win()
-    local total_cols = vim.o.columns
-    local term_width = math.floor(total_cols / 3)
-    vim.cmd("botright " .. term_width .. " vsplit | term opencode --port")
-    local name = opencode_buf_name()
-    vim.api.nvim_buf_set_name(vim.api.nvim_get_current_buf(), name)
-    vim.bo[vim.api.nvim_get_current_buf()].buflisted = false
+    local cwd = vim.fn.fnameescape(vim.fn.getcwd())
+    vim.cmd("botright " .. term_width() .. " vsplit | lcd " .. cwd .. " | buffer " .. buf)
+    vim.bo[buf].buflisted = false
     vim.api.nvim_set_current_win(origin_win)
+  end
+
+  -- Start (or reuse) the OpenCode TUI for the current worktree. Always lcd to
+  -- getcwd() so a leftover buffer from another worktree cannot hijack cwd.
+  local function start_opencode_term()
+    local name = opencode_buf_name()
+    local existing = find_opencode_buf(name)
+    if existing then
+      if vim.fn.bufwinid(existing) == -1 then
+        show_opencode_buf(existing)
+      end
+      return
+    end
+
+    local origin_win = vim.api.nvim_get_current_win()
+    local cwd = vim.fn.fnameescape(vim.fn.getcwd())
+    vim.cmd("botright " .. term_width() .. " vsplit | lcd " .. cwd .. " | term opencode --port")
+    local buf = vim.api.nvim_get_current_buf()
+    vim.api.nvim_buf_set_name(buf, name)
+    vim.bo[buf].buflisted = false
+    vim.api.nvim_set_current_win(origin_win)
+  end
+
+  local function toggle_opencode_terminal()
+    local name = opencode_buf_name()
+    local found_buf = find_opencode_buf(name)
+    if found_buf then
+      local win = vim.fn.bufwinid(found_buf)
+      if win ~= -1 then
+        vim.api.nvim_win_close(win, true)
+      else
+        show_opencode_buf(found_buf)
+      end
+    else
+      start_opencode_term()
+    end
   end
 
   vim.g.opencode_opts = {
     server = {
-      start = opencode_terminal
+      start = start_opencode_term
     }
   }
   -- Toggle terminal (hides window without killing session)

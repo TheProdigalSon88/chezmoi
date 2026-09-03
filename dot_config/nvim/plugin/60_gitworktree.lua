@@ -1,17 +1,18 @@
--- Create a user command
+local function normalize_path(path)
+  return vim.fn.fnamemodify(path, ":p"):gsub("/$", "")
+end
+
+-- Wipe every non-terminal buffer (loaded or not). Terminal jobs stay alive.
 local function deleteNonTerminals()
-  -- 1. Delete all non-terminal buffers
-  local buffers = vim.api.nvim_list_bufs()
-  for _, buf in ipairs(buffers) do
-    -- Check if the buffer is loaded and is NOT a terminal
-    if vim.api.nvim_buf_is_loaded(buf) and vim.bo[buf].buftype ~= "terminal" then
+  for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+    if vim.api.nvim_buf_is_valid(buf) and vim.bo[buf].buftype ~= "terminal" then
       vim.api.nvim_buf_delete(buf, { force = true })
     end
   end
 end
 
 local function closeTerminals()
-  -- 2. Close terminal windows (but never the last window)
+  -- Close terminal windows (but never the last window)
   for _, win in ipairs(vim.api.nvim_list_wins()) do
     if #vim.api.nvim_list_wins() > 1 then
       local buf = vim.api.nvim_win_get_buf(win)
@@ -19,6 +20,13 @@ local function closeTerminals()
         vim.api.nvim_win_close(win, true)
       end
     end
+  end
+end
+
+local function disconnect_opencode()
+  local ok, server = pcall(require, "opencode.server")
+  if ok and server.connected then
+    server.connected:disconnect()
   end
 end
 
@@ -51,14 +59,90 @@ local function parse_worktrees()
   return worktrees
 end
 
--- Save the session for the current git root, if inside a repo.
-local function save_session()
-  local root = vim.fn.systemlist("git rev-parse --show-toplevel")[1]
-  if vim.v.shell_error == 0 then
-    local session = root .. "/session.vim"
-    vim.cmd("mksession! " .. vim.fn.fnameescape(session))
-    vim.notify("Session saved: " .. session)
+-- Drop listed file buffers that live in a sibling worktree so they are not
+-- written into this worktree's session. Skip the bare repo: its path is a
+-- prefix of every checkout.
+local function prune_foreign_worktree_buffers()
+  local worktrees = parse_worktrees()
+  local cwd = normalize_path(vim.fn.getcwd())
+  local common = vim.fn.systemlist("git rev-parse --path-format=absolute --git-common-dir")[1]
+  if vim.v.shell_error == 0 and common and common ~= "" then
+    common = normalize_path(common)
+  else
+    common = nil
   end
+
+  for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+    if vim.api.nvim_buf_is_valid(buf) and vim.bo[buf].buftype == "" then
+      local name = vim.api.nvim_buf_get_name(buf)
+      if name ~= "" then
+        local abs = normalize_path(name)
+        for _, wt in ipairs(worktrees) do
+          if wt.branch and wt.path then
+            local wtpath = normalize_path(wt.path)
+            local is_bare = common and wtpath == common
+            if not is_bare and wtpath ~= cwd and vim.startswith(abs, wtpath .. "/") then
+              vim.api.nvim_buf_delete(buf, { force = true })
+              break
+            end
+          end
+        end
+      end
+    end
+  end
+end
+
+-- Session names are `{repo}-{branch}` in MiniSessions.config.directory.
+-- Repo comes from --git-common-dir (stable across worktrees), not toplevel.
+local function sanitize_session_part(s)
+  return s:gsub("[/\\]", "%%")
+end
+
+local function git_repo_name()
+  local common = vim.fn.systemlist("git rev-parse --path-format=absolute --git-common-dir")[1]
+  if vim.v.shell_error ~= 0 or not common or common == "" then
+    return nil
+  end
+  common = common:gsub("/$", "")
+  local last = vim.fn.fnamemodify(common, ":t")
+  if last == ".git" then
+    return vim.fn.fnamemodify(common, ":h:t")
+  end
+  return last:gsub("%.git$", "")
+end
+
+local function git_branch()
+  local branch = vim.fn.systemlist("git branch --show-current")[1]
+  if vim.v.shell_error ~= 0 then
+    return nil
+  end
+  if not branch or branch == "" then
+    return "detached"
+  end
+  return branch
+end
+
+local function session_name()
+  local repo = git_repo_name()
+  local branch = git_branch()
+  if not repo or not branch then
+    return nil
+  end
+  return sanitize_session_part(repo) .. "-" .. sanitize_session_part(branch)
+end
+
+local function session_file(name)
+  return MiniSessions.config.directory .. "/" .. name
+end
+
+-- Save a named global mini.session for the current worktree, if inside a repo.
+local function save_session()
+  local name = session_name()
+  if not name then
+    return
+  end
+  prune_foreign_worktree_buffers()
+  MiniSessions.write(name, { force = true })
 end
 
 Config.later(function()
@@ -74,9 +158,11 @@ Config.later(function()
   Worktree.on_tree_change(function(op, metadata)
     if op == Worktree.Operations.Switch then
       deleteNonTerminals()
-      local session = metadata.path .. "/session.vim"
-      if vim.fn.filereadable(session) == 1 then
-        vim.cmd("source " .. vim.fn.fnameescape(session))
+      disconnect_opencode()
+      local name = session_name()
+      local path = name and session_file(name)
+      if path and vim.fn.filereadable(path) == 1 then
+        vim.cmd("source " .. vim.fn.fnameescape(path))
       else
         vim.cmd("enew")
       end
@@ -94,12 +180,13 @@ Config.later(function()
       return
     end
 
-    -- Build display items: "path  [branch]"
+    -- Build display items: "repo  [branch]"
+    local repo = git_repo_name() or vim.fn.fnamemodify(vim.fn.getcwd(), ":t")
     local items = {}
     for _, wt in ipairs(worktrees) do
       local branch = wt.branch or "(unknown)"
       table.insert(items, {
-        text = wt.path .. "  [" .. branch .. "]",
+        text = repo .. "  [" .. branch .. "]",
         path = wt.path,
       })
     end
