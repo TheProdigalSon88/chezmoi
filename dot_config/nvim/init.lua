@@ -134,9 +134,9 @@ Config.on_filetype = function(ft, f)
 	misc.safely("filetype:" .. ft, f)
 end
 
-local function apply_omarchy_theme()
+local function apply_theme()
 	-- 1. Run the protected call
-	local status, omarchy = pcall(require, "omarchy-theme")
+	local status, omarchy = pcall(require, "theme")
 
 	-- 2. Strictly check that it succeeded AND returned a table payload
 	if status and type(omarchy) == "table" and omarchy.colorscheme then
@@ -175,12 +175,12 @@ local function apply_omarchy_theme()
 end
 
 -- Execute functions
-apply_omarchy_theme()
+apply_theme()
 
 vim.api.nvim_create_autocmd("User", {
 	pattern = "OmarchyThemeChanged",
 	callback = function()
 		package.loaded["omarchy-theme"] = nil
-		apply_omarchy_theme()
+		apply_theme()
 	end,
 })
