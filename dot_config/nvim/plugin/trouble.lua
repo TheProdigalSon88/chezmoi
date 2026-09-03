@@ -1,8 +1,6 @@
 Config.later(function()
   vim.pack.add({ "https://github.com/folke/trouble.nvim" })
 
-  require("trouble").setup({})
-
   -- Make Trouble the default for quickfix/location list keymaps,
   -- overriding the native `:copen`/`:lopen` toggles.
   vim.keymap.set("n", "<leader>xq", "<cmd>Trouble qflist toggle<cr>", { desc = "Quickfix List (Trouble)" })
