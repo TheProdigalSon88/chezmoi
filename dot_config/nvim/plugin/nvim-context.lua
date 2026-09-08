@@ -1,7 +1,7 @@
 local add = vim.pack.add
 local later = Config.later
 
-local ROOT = "/path/to/local/nvim-context.git"
+local ROOT = "/home/paul/Projects/nvim-context.git"
 
 -- Load the worktree on rtp (no vim.pack clone). If cwd is already inside a
 -- worktree (plugin sessions cd there), use that; else DeleteContextReferences.
@@ -11,7 +11,7 @@ local function dev_src()
   if wt and vim.uv.fs_stat(wt .. "/lua/nvim-context/init.lua") then
     return wt
   end
-  return ROOT .. "/DeleteContextReferences"
+  return ROOT .. "/master"
 end
 
 later(function()
@@ -25,15 +25,6 @@ later(function()
   local src = dev_src()
   vim.opt.runtimepath:prepend(src)
   dofile(src .. "/plugin/nvim-context.lua")
-
-  -- image.nvim
-  require("image").setup({ backend = "kitty" })
-
-  -- diagram.nvim (handles rendering automatically on markdown buffers)
-  require("diagram").setup({
-    integrations = { require("diagram.integrations.markdown") },
-    renderer_options = { mermaid = { theme = "default" } },
-  })
 
   -- nvim-context
   require("nvim-context").setup({
@@ -52,25 +43,29 @@ later(function()
     },
   })
 
-  -- Only trouble.setup() in this config. A later setup() would wipe these keys.
   require("trouble").setup({
     modes = {
       qflist = {
         -- Override Trouble's view-only `dd` so deletes hit the Neovim qflist.
         keys = {
           a = {
-            action = function(self, ctx)
-              require("nvim-context").EditTroubleItemNote(self, ctx)
+            action = function(_, ctx)
+              require("nvim-context").EditTroubleItemNote(ctx)
             end,
             desc = "Add/Edit Note",
           },
           dd = {
-            action = function(self, ctx)
-              require("nvim-context").DeleteTroubleItem(self, ctx)
+            action = function(_, ctx)
+              require("nvim-context").DeleteTroubleItem(ctx)
             end,
             desc = "Delete context reference",
+          },
+          e = {
+            action = function(_, ctx)
+              require("nvim-context").EditTroubleItemLines(ctx)
+            end,
+            desc = "Edit reference lines",
           }
-          ,
         }
       },
     },
