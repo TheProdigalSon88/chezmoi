@@ -118,27 +118,8 @@ now(function()
 	local starter = require("mini.starter")
 	starter.setup({
 		items = {
-			starter.sections.recent_files(5, false, false),
+			starter.sections.recent_files(8, false, true),
 			starter.sections.sessions(5, true),
-			{
-				{
-					name = "Browse chezmoi files",
-					action = function()
-						require("mini.pick").start({
-							source = {
-								name = "Chezmoi",
-								items = vim.fn.systemlist("chezmoi managed --include=files --path-style=source-absolute"),
-								choose = function(item)
-									if item then
-                    MiniPick.default_choose(item)
-									end
-								end,
-							},
-						})
-					end,
-					section = "Chezmoi",
-				},
-			},
 		},
 		content_hooks = {
 			starter.gen_hook.adding_bullet(),
