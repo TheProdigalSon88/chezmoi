@@ -1,0 +1,275 @@
+" MiniMax Neovim → IdeaVim
+" Source: ~/.local/share/chezmoi/dot_ideavimrc  (chezmoi apply → ~/.ideavimrc)
+"
+" Marketplace plugins required before these lines do anything:
+"   AceJump                 https://plugins.jetbrains.com/plugin/7086-acejump
+"   IdeaVim-EasyMotion      https://plugins.jetbrains.com/plugin/13360-ideavim-easymotion
+"   Which-Key               https://plugins.jetbrains.com/plugin/15976-which-key
+"   IdeaVim-Quickscope      https://plugins.jetbrains.com/plugin/19417-ideavim-quickscope
+"   Vim Peekaboo            https://plugins.jetbrains.com/plugin/25776-vim-peekaboo
+"
+" After install: :source ~/.ideavimrc  (or restart the IDE)
+" Verify action IDs with :actionlist [pattern] or  set ideatrackactionids
+" Hand Space, <C-hjkl>, <C-s> to Vim if they clash:
+"   Settings → Editor → Vim  /  Keymap → find the shortcut → "IDEAVim Handler"
+"
+" Indent width is an IDE setting, not Vim. Use 2 spaces + expand tabs to match MiniMax.
+
+" mapleader must come before EasyMotion / Plug
+let mapleader=" "
+let g:EasyMotion_do_mapping = 0
+let g:exchange_no_mappings = 1
+
+" =============================================================================
+" Options (MiniMax 10_options.lua + IdeaVim-only)
+" =============================================================================
+set number
+set cursorline
+set list
+set nowrap
+set breakindent
+set ignorecase
+set smartcase
+set incsearch
+set hlsearch
+set noshowmode
+set scrolloff=5
+set iskeyword=@,48-57,_,192-255,-
+set clipboard+=ideaput
+set ideajoin
+set ideamarks
+set idearefactormode=keep
+set ideawrite=file
+set timeoutlen=1000
+
+" =============================================================================
+" Plugins
+" =============================================================================
+Plug 'tpope/vim-commentary'
+Plug 'machakann/vim-highlightedyank'
+Plug 'tpope/vim-surround'
+Plug 'vim-scripts/ReplaceWithRegister'
+Plug 'tommcdo/vim-exchange'
+Plug 'wellle/targets.vim'
+Plug 'michaeljsmith/vim-indent-object'
+Plug 'kana/vim-textobj-entire'
+Plug 'preservim/nerdtree'
+Plug 'easymotion/vim-easymotion'
+Plug 'jeetsukumaran/vim-indentwise'
+Plug 'dbakker/vim-paragraph-motion'
+set functextobj
+set classtextobj
+set youcompleteme
+set peekaboo
+set which-key
+set quickscope
+packadd matchit
+
+" surround → mini.surround keys (not tpope ys/ds/cs)
+nmap sa <Plug>Ysurround
+nmap sd <Plug>Dsurround
+nmap sr <Plug>Csurround
+xmap sa <Plug>VSurround
+
+" exchange → mini.operators gx (not default cx)
+nmap gx <Plug>(Exchange)
+nmap gxx <Plug>(ExchangeLine)
+nmap gxc <Plug>(ExchangeClear)
+xmap gx <Plug>(Exchange)
+
+" entire buffer as MiniMax aB/iB (ae/ie stay too)
+omap aB <Plug>(textobj-entire-a)
+xmap aB <Plug>(textobj-entire-a)
+omap iB <Plug>(textobj-entire-i)
+xmap iB <Plug>(textobj-entire-i)
+
+" MiniMax af/if (function) → functextobj am/im
+omap af am
+xmap af am
+omap if im
+xmap if im
+
+" swap adjacent arguments (MiniMax ( / ) via gx + targets ia)
+nmap ( gxiagxila
+nmap ) gxiagxina
+
+" =============================================================================
+" Force Vim to own keys that IDEs often steal
+" =============================================================================
+sethandler <C-h> n:vim
+sethandler <C-j> n:vim
+sethandler <C-k> n:vim
+sethandler <C-l> n:vim
+sethandler <C-s> a:vim
+
+" =============================================================================
+" mini.basics
+" =============================================================================
+nnoremap <C-h> <C-w>h
+nnoremap <C-j> <C-w>j
+nnoremap <C-k> <C-w>k
+nnoremap <C-l> <C-w>l
+
+inoremap <A-h> <Left>
+inoremap <A-j> <Down>
+inoremap <A-k> <Up>
+inoremap <A-l> <Right>
+cnoremap <A-h> <Left>
+cnoremap <A-j> <Down>
+cnoremap <A-k> <Up>
+cnoremap <A-l> <Right>
+
+" mini.move (normal/visual). Insert Alt-hjkl stay cursor-move above.
+nmap <A-j> <Action>(MoveLineDown)
+nmap <A-k> <Action>(MoveLineUp)
+nnoremap <A-h> <<
+nnoremap <A-l> >>
+xmap <A-j> <Action>(MoveStatementDown)
+xmap <A-k> <Action>(MoveStatementUp)
+xnoremap <A-h> <gv
+xnoremap <A-l> >gv
+
+nmap gy "+y
+xmap gy "+y
+nmap gp "+p
+xmap gp "+p
+
+nnoremap go o<Esc>k
+nnoremap gO O<Esc>j
+
+nnoremap <C-s> :write<CR>
+inoremap <C-s> <Esc>:write<CR>
+
+nnoremap \h :set hlsearch!<CR>
+nnoremap \w :set wrap!<CR>
+nnoremap \n :set number!<CR>
+nnoremap \r :set relativenumber!<CR>
+nnoremap \l :set list!<CR>
+nnoremap \c :set cursorline!<CR>
+nnoremap \i :set ignorecase!<CR>
+
+nnoremap [p :put!<CR>
+nnoremap ]p :put<CR>
+
+map Q gq
+
+" =============================================================================
+" mini.jump2d — <CR> EasyMotion (word starts, both directions, works as motion)
+" =============================================================================
+map <CR> <Plug>(easymotion-bd-w)
+
+" =============================================================================
+" mini.bracketed + indentscope
+" =============================================================================
+map ]b <Action>(NextTab)
+map [b <Action>(PreviousTab)
+map ]d <Action>(GotoNextError)
+map [d <Action>(GotoPreviousError)
+map ]c <Action>(VcsShowNextChangeMarker)
+map [c <Action>(VcsShowPrevChangeMarker)
+
+" indentwise [% / ]% as MiniMax [i / ]i
+nmap [i [%
+nmap ]i ]%
+xmap [i [%
+xmap ]i ]%
+
+" =============================================================================
+" Leader — <Action> maps MUST use recursive map, not noremap
+" =============================================================================
+
+" --- b Buffer ---
+nnoremap <leader>ba :b#<CR>
+map <leader>bd <Action>(CloseContent)
+map <leader>bD <Action>(CloseContent)
+map <leader>bw <Action>(CloseContent)
+map <leader>bW <Action>(CloseContent)
+map <leader>bs <Action>(NewScratchFile)
+
+" --- e Explore/Edit ---
+nnoremap <leader>ed :NERDTreeToggle<CR>
+nnoremap <leader>ef :NERDTreeFind<CR>
+nnoremap <leader>ei :edit ~/.local/share/chezmoi/dot_ideavimrc<CR>
+
+" --- f Find ---
+map <leader>ff <Action>(GotoFile)
+map <leader>fg <Action>(FindInPath)
+map <leader>fG <Action>(FindWordAtCaret)
+map <leader>fb <Action>(Switcher)
+map <leader>fh <Action>(HelpTopics)
+map <leader>fs <Action>(GotoSymbol)
+map <leader>fS <Action>(FileStructurePopup)
+map <leader>fR <Action>(FindUsages)
+map <leader>fd <Action>(ActivateProblemsViewToolWindow)
+map <leader>fD <Action>(ActivateProblemsViewToolWindow)
+map <leader>fc <Action>(Vcs.Show.Log)
+map <leader>fC <Action>(Vcs.ShowTabbedFileHistory)
+map <leader>fa <Action>(ChangesView.ShowLocalChanges)
+map <leader>fA <Action>(ChangesView.ShowLocalChanges)
+map <leader>fm <Action>(ChangesView.ShowLocalChanges)
+map <leader>fM <Action>(Vcs.ShowTabbedFileHistory)
+map <leader>fv <Action>(RecentFiles)
+map <leader>fV <Action>(RecentFiles)
+map <leader>fL <Action>(Find)
+
+" --- g Git ---
+map <leader>gg <Action>(ActivateVersionControlToolWindow)
+map <leader>gs <Action>(Annotate)
+map <leader>gd <Action>(Compare.SameVersion)
+map <leader>gD <Action>(Compare.LocalVcsChanges)
+map <leader>ga <Action>(ChangesView.ShowLocalChanges)
+map <leader>gA <Action>(ChangesView.ShowLocalChanges)
+map <leader>gc <Action>(CheckinProject)
+map <leader>gC <Action>(Vcs.ToggleAmendCommitMode)
+map <leader>gl <Action>(Vcs.Show.Log)
+map <leader>gL <Action>(Vcs.ShowTabbedFileHistory)
+xmap <leader>gs <Action>(Annotate)
+
+" --- l Language ---
+map <leader>la <Action>(ShowIntentionActions)
+map <leader>ld <Action>(ShowErrorDescription)
+map <leader>lf <Action>(ReformatCode)
+map <leader>lh <Action>(ShowHoverInfo)
+map <leader>li <Action>(GotoImplementation)
+map <leader>lr <Action>(RenameElement)
+map <leader>lR <Action>(FindUsages)
+map <leader>ls <Action>(GotoDeclaration)
+map <leader>lt <Action>(GotoTypeDeclaration)
+xmap <leader>lf <Action>(ReformatCode)
+
+" --- o Other ---
+map <leader>oz <Action>(HideAllWindows)
+
+" --- s Session (IntelliJ projects ≠ mini.sessions) ---
+map <leader>sr <Action>(ManageRecentProjects)
+
+" --- t Terminal ---
+map <leader>tt <Action>(ActivateTerminalToolWindow)
+map <leader>tT <Action>(ActivateTerminalToolWindow)
+
+" --- k Android/Kotlin ---
+" IDs drift by Studio version; :actionlist logcat / :actionlist gradle if a map no-ops
+if &ide =~? 'android'
+  map <leader>kr <Action>(Run)
+  map <leader>kb <Action>(CompileDirty)
+  map <leader>ki <Action>(Run)
+  map <leader>kl <Action>(ActivateLogcatToolWindow)
+  map <leader>kL <Action>(ActivateLogcatToolWindow)
+  map <leader>kt <Action>(RunClass)
+  map <leader>k. <Action>(ActivateGradleToolWindow)
+endif
+
+" =============================================================================
+" Which-Key group labels (mini.clue)
+" =============================================================================
+let g:WhichKeyDesc_buffer      = "<leader>b Buffer"
+let g:WhichKeyDesc_explore     = "<leader>e Explore/Edit"
+let g:WhichKeyDesc_find        = "<leader>f Find"
+let g:WhichKeyDesc_git         = "<leader>g Git"
+let g:WhichKeyDesc_android     = "<leader>k Android/Kotlin"
+let g:WhichKeyDesc_language    = "<leader>l Language"
+let g:WhichKeyDesc_other       = "<leader>o Other"
+let g:WhichKeyDesc_session     = "<leader>s Session"
+let g:WhichKeyDesc_terminal    = "<leader>t Terminal"
+let g:WhichKeyDesc_option      = "\\ option"
+let g:WhichKeyDesc_surround    = "s surround"
