@@ -79,4 +79,33 @@ later(function()
   map("n", "<leader>ct", "<cmd>Context AddEditContextTitle<cr>", { desc = "Set quickfix title" })
   map("n", "<leader>cd", "<cmd>Context AddEditContextDescription<cr>", { desc = "Set context description" })
   map({ "n", "v" }, "<leader>cr", "<cmd>Context ShowReference<cr>", { desc = "Show reference" })
+  map({ "n", "v" }, "<leader>cc", function()
+    local Context = require("nvim-context")
+    local skip = {
+      setup = true,
+      StatuslineComponent = true,
+      EditTroubleItemNote = true,
+      EditTroubleItemLines = true,
+      DeleteTroubleItem = true,
+      EditReference = true,
+      EditReferenceLines = true,
+    }
+    local commands = {}
+    for name, fn in pairs(Context) do
+      if type(fn) == "function" and not skip[name] then
+        table.insert(commands, name)
+      end
+    end
+    table.sort(commands)
+    local line1, line2 = vim.fn.line("v"), vim.fn.line(".")
+    if line1 > line2 then
+      line1, line2 = line2, line1
+    end
+    vim.ui.select(commands, { prompt = "Context command:" }, function(choice)
+      if not choice then
+        return
+      end
+      Context[choice](line1, line2)
+    end)
+  end, { desc = "Context commands" })
 end)

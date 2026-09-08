@@ -51,6 +51,7 @@ nmap(']p', '<Cmd>exe "iput "  . v:register<CR>', 'Paste Below')
 -- Add an entry if you create a new group.
 Config.leader_group_clues = {
   { mode = 'n', keys = '<Leader>b', desc = '+Buffer' },
+  { mode = 'n', keys = '<Leader>c', desc = '+Context' },
   { mode = 'n', keys = '<Leader>e', desc = '+Explore/Edit' },
   { mode = 'n', keys = '<Leader>f', desc = '+Find' },
   { mode = 'n', keys = '<Leader>g', desc = '+Git' },
@@ -64,6 +65,7 @@ Config.leader_group_clues = {
   { mode = 'n', keys = '<Leader>a', desc = '+AI' },
 
   { mode = 'x', keys = '<Leader>a', desc = '+AI' },
+  { mode = 'x', keys = '<Leader>c', desc = '+Context' },
   { mode = 'x', keys = '<Leader>g', desc = '+Git' },
   { mode = 'x', keys = '<Leader>l', desc = '+Language' },
 }
